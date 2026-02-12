@@ -429,15 +429,6 @@ conn_loop(void)
 #ifdef DEBUG
               logw(5, "tty: response read (total %d bytes, offset %d bytes)", tty.ptrbuf, tty.rxoffset);
 #endif
-              /* Check if there is enough data for an error response
-                  and if the error flag is set in the function code */
-              if ((tty.ptrbuf >= MB_ERR_LEN) &&
-                  (tty.rxbuf[tty.rxoffset+TTY_FCODE_IDX] & TTY_ERR_MASK))
-              {
-                /* This is an error response, set the length to
-		             5 (1 + 1 + 1 + 2) = Slave Address + Function Code + Error Code + CRC */
-                tty.ptrbuf = MB_ERR_LEN;
-              }
               if (tty.ptrbuf >= MB_MIN_LEN &&
                      modbus_crc_correct(tty.rxbuf + tty.rxoffset, tty.ptrbuf - tty.rxoffset))
               { /* received response is correct, make OpenMODBUS response */
@@ -580,30 +571,6 @@ conn_loop(void)
           else
           {
             state_tty_set(&tty, TTY_RESP);
-            switch (tty.txbuf[1]) {
-              case 1:
-              case 2:
-                tty.rxlen = 5 + (tty.txbuf[4] * 256 + tty.txbuf[5] + 7)/8;
-                break;
-              case 3:
-              case 4:
-                tty.rxlen = 5 + tty.txbuf[5] * 2;
-                break;
-              case 7:
-                tty.rxlen = 5;
-                break;
-              case 11:
-              case 15:
-              case 16:
-                tty.rxlen = 8;
-                break;
-              default:
-                tty.rxlen = tty.txlen;
-                break;
-            }
-            if (tty.rxlen > TTY_BUFSIZE)
-              tty.rxlen = TTY_BUFSIZE;
-            tty.timer += DV(tty.rxlen, tty.bpc, tty.speed);
 #ifdef DEBUG
             logw(5, "tty: estimated %d bytes, waiting %lu usec", tty.rxlen, tty.timer);
 #endif
@@ -641,41 +608,6 @@ conn_loop(void)
 #ifdef DEBUG
           logw(7, "tty: read %d bytes", rc);
 #endif
-          if (tty.ptrbuf - tty.rxoffset < 3 && tty.ptrbuf - tty.rxoffset + rc >= 3) {
-            /* we received more than 3 bytes from header - address, request id and bytes count */
-            if (!tty.rxoffset) {
-              /* offset is unknown */
-              unsigned char i;
-              for (i = 0; i < tty.ptrbuf - tty.rxoffset + rc - 1; i++) {
-                if (tty.rxbuf[i] == tty.txbuf[0] && tty.rxbuf[i+1] == tty.txbuf[1]) {
-#ifdef DEBUG
-                  logw(5, "tty: rx offset is %d", i);
-#endif
-                  tty.rxoffset = i;
-                  break;
-                }
-              }
-              switch (tty.txbuf[1]) {
-                case 1:
-                case 2:
-                case 3:
-                case 4:
-                  i = 5 + tty.rxbuf[tty.rxoffset + 2];
-                  break;
-                default:
-                  i = tty.rxlen;
-                  break;
-              }
-              if (i + tty.rxoffset > TTY_BUFSIZE)
-                i = TTY_BUFSIZE - tty.rxoffset;
-              if (i != tty.rxlen) {
-#ifdef DEBUG
-                logw(5, "tty: rx len changed from %d to %d", tty.rxlen, i);
-#endif
-                tty.rxlen = i;
-              }
-            }
-          }
           tty.ptrbuf += rc;
           logw(5, "tty: read %d bytes of %d, offset %d", tty.ptrbuf, tty.rxlen + tty.rxoffset, tty.rxoffset);
           if (tty.ptrbuf == tty.rxlen + tty.rxoffset)
@@ -802,62 +734,6 @@ conn_loop(void)
                 state_conn_set(curconn, CONN_RQST_FUNC);
               }
             if (curconn->state == CONN_RQST_FUNC)
-              if (curconn->ctr >= MB_DATA)
-              {
-                /* check request function code */
-                unsigned char fc = MB_FRAME(curconn->buf, MB_FCODE);
-#ifdef DEBUG
-                logw(7, "conn[%s]: read request fc %d", curconn->remote_addr, fc);
-#endif
-                switch (fc)
-                {
-                  case 1: /* Read Coil Status */
-                  case 2: /* Read Input Status */
-                  case 3: /* Read Holding Registers */
-                  case 4: /* Read Input Registers */
-                  case 5: /* Force Single Coil */
-                  case 6: /* Preset Single Register */
-                  {
-                    /* set data length for requests with fixed length */
-                    conn_fix_request_header_len(curconn, 6);
-                    state_conn_set(curconn, CONN_RQST_TAIL);
-                  }
-                    break;
-                  case 15: /* Force Multiple Coils */
-                  case 16: /* Preset Multiple Registers */
-                    /* will read number of registers/coils to compute request data length */
-                    state_conn_set(curconn, CONN_RQST_NVAL);
-                    break;
-                  default:
-                    /* unknown function code, will rely on data length from header */
-                    state_conn_set(curconn, CONN_RQST_TAIL);
-                    break;
-                }
-              }
-            if (curconn->state == CONN_RQST_NVAL)
-              if (curconn->ctr >= MB_DATA_NBYTES)
-              {
-                /* compute request data length for fc 15/16 */
-                unsigned int len = 0;
-                switch (MB_FRAME(curconn->buf, MB_FCODE))
-                {
-                  case 15: /* Force Multiple Coils */
-                    len = 7 + (MB_FRAME(curconn->buf, MB_DATA_NVAL_H) * 256 +
-                        MB_FRAME(curconn->buf, MB_DATA_NVAL_L) + 7) / 8;
-                    break;
-                  case 16: /* Preset Multiple Registers */
-                    len = 7 + MB_FRAME(curconn->buf, MB_DATA_NVAL_L) * 2;
-                    break;
-                }
-                if (len == 0 || len > BUFSIZE - 2)
-                { /* invalid request data length, drop connection */
-                  curconn = conn_close(curconn);
-                  break;
-                }
-                conn_fix_request_header_len(curconn, len);
-                state_conn_set(curconn, CONN_RQST_TAIL);
-              }
-            if (curconn->state == CONN_RQST_TAIL)
               if (curconn->ctr >= HDRSIZE + MB_FRAME(curconn->buf, MB_LENGTH_L))
               { /* ### frame received completely ### */
 #ifdef DEBUG
