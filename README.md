@@ -34,15 +34,22 @@ Please note all other function codes (including vendor-specific extensions) are 
 
 Installation instructions:
 ----------------------------
-
+install cmake and pkg_config
+```shell
+sudo aptitude install pkg-config cmake
+```
+then
 ```
 $ git clone https://github.com/3cky/mbusd.git mbusd.git
 $ cd mbusd.git
 $ mkdir -p build && cd build
-$ cmake -DCMAKE_INSTALL_PREFIX=/usr ..
-$ make
+$ cmake ..
+make
 $ sudo make install
 ```
+
+optionaly add -DCMAKE_INSTALL_PREFIX=/usr to install to /usr instead of
+default /usr/local to cmake
 
 ***Compile time options***
 can be altered in many ways, e.g. by using the following tools in the `build` dir:
@@ -52,9 +59,9 @@ can be altered in many ways, e.g. by using the following tools in the `build` di
 Usage:
 ------
 
-       mbusd [-h] [-d] [-L logfile] [-v level] [-c cfgfile] 
+       mbusd [-h] [-d] [-L logfile] [-v level] [-c cfgfile]
              [-p device] [-s speed] [-m mode] [-S]
-             [-t] [-r] [-y sysfsfile] [-Y sysfsfile] 
+             [-t] [-r] [-y sysfsfile] [-Y sysfsfile]
              [-A address] [-P port] [-C maxconn] [-N retries]
              [-R pause] [-W wait] [-T timeout] [-b]
 
@@ -64,8 +71,8 @@ Usage:
               Specifies log file name ('-' for logging to STDOUT only, relative path or bare filename
               will be stored at /var/log, default is /var/log/mbusd.log).
        -v level
-              Specifies log verbosity level (0 for errors only, 1 for warnings and 2 for informational 
-              messages also). If mbusd was compiled in debug mode, valid log levels are up to 9, 
+              Specifies log verbosity level (0 for errors only, 1 for warnings and 2 for informational
+              messages also). If mbusd was compiled in debug mode, valid log levels are up to 9,
               where log levels above 2 adds logging of information about additional internal events.
        -c cfgfile
               Read configuration from cfgfile.
