@@ -6,7 +6,6 @@ After=network-online.target
 Type=simple
 
 #Environment=PATH="${PATH}:/opt/node/bin"
-#WorkingDirectory=/usr/local/bdws/bdws_serverjs/
 
 User=mbusd
 Group=mbusd
@@ -14,9 +13,7 @@ UMask=007
 
 # debug -v0 to -v9
 # responce time -W40 => 40ms
-ExecStart=/usr/local/bin/mbusd -v0 -d -P5252 -t -s115200 -W40 -p /dev/serial/by-id/usb-FTDI_USB-RS485_Cable_FT08AQ8K-if00-port0
-#ExecStart=/usr/local/bin/mbusd -v0 -d -P5252 -t -s115200 -W40 -p "/dev/serial/by-path/pci-0000:04:02.0-usb-0:2:1.0-port0"
-#/dev/serial/by-id/usb-FTDI_USB-RS485_Cable_FT07TNG2-if00-port0
+ExecStart=/usr/local/bin/mbusd -v0 -d -P5252 -t -s115200 -W40 -p /dev/ttyUSB0
 
 Restart=on-failure
 RestartSec=60

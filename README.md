@@ -162,6 +162,33 @@ docker run -d --privileged \
 
 where `/path/to/mbusd.conf` is the path to **mbusd** config file in the local filesystem.
 
+Systemd:
+--------
+
+Create a user and group for mbusd:
+
+```shell
+sudo groupadd mbusd
+sudo useradd -r -s /bin/false -g mbusd mbusd
+```
+
+add mbusd user to dialout group to allow it to access serial ports:
+
+```shell
+sudo usermod -a -G dialout mbusd
+```
+
+Copy `mbusd.service` file to systemd directory (e.g. `/etc/systemd/system/`),
+
+then start the service with:
+```shell
+sudo touch /var/log/mbusd.log
+sudo chown mbusd:mbusd /var/log/mbusd.log
+sudo systemctl daemon-reload
+sudo systemctl enable mbusd.service
+sudo systemctl start mbusd.service
+```
+
 Contributing:
 -------------
 
