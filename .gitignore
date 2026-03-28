@@ -9,3 +9,5 @@
 .pydevproject
 /build
 build.sh
+/output.dir
+.session.vim
