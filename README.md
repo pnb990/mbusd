@@ -110,6 +110,9 @@ Usage:
 
 Please note running **mbusd** on default Modbus TCP port (502) requires root privileges!
 
+Example usage:
+         # mbusd -p /dev/ttyUSB0 -s 9600 -m 8E1 -P 502
+
 Configuration file:
 -------------------
 **mbusd** can read the configuration from a file specified by `-c` command line flag.

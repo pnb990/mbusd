@@ -13,7 +13,7 @@ UMask=007
 
 # debug -v0 to -v9
 # responce time -W40 => 40ms
-ExecStart=/usr/local/bin/mbusd -v0 -d -P5252 -t -s115200 -W40 -p /dev/ttyUSB0
+ExecStart=/usr/local/bin/mbusd -v0 -d -P5252 -t -s115200 -M 8N1 -W40 -p /dev/ttyUSB0
 
 Restart=on-failure
 RestartSec=60
