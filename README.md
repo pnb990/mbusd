@@ -119,6 +119,15 @@ Configuration file:
 Please see [example configuration file](conf/mbusd.conf.example)
 for complete list of available configuration options.
 
+
+Create mbusd user and group to run mbusd with non-root privileges:
+
+```shell
+sudo useradd --system --no-create-home --shell /usr/sbin/nologin --group dialout mbusd
+sudo touch /var/log/mbusd.log
+sudo chown mbusd:mbusd /var/log/mbusd.log
+```
+
 systemd:
 ---------------
 
