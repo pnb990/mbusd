@@ -13,7 +13,11 @@ UMask=007
 
 # debug -v0 to -v9
 # responce time -W40 => 40ms
-ExecStart=/usr/local/bin/mbusd -v0 -d -P5252 -t -s115200 -M 8N1 -W40 -p /dev/ttyUSB0
+# 8N1 => 8bit no parity
+# 8E1 => 8bit even parity
+# 8O1 => 8bit odd parity
+
+ExecStart=/usr/local/bin/mbusd -v0 -d -P5252 -t -s115200 -m 8E1 -W40 -p /dev/ttyUSB0
 
 Restart=on-failure
 RestartSec=60
